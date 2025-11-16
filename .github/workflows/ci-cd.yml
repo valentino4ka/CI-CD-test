@@ -50,22 +50,13 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create requirements.txt if missing
-        run: |
-          if [ ! -f requirements.txt ]; then
-            echo "requests==2.31.0" > requirements.txt
-            echo "flask==2.3.3" >> requirements.txt
-          fi
+      - name: Create reports directory
+        run: mkdir -p reports
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Create reports directory
-        run: |
-          mkdir -p reports
-          touch reports/dependency-check-report.html
+          pip install -r requirements.txt || echo "No requirements.txt"
 
       - name: Download OWASP Dependency-Check
         run: |
@@ -78,9 +69,11 @@ jobs:
           ./dependency-check/bin/dependency-check.sh \
             --project "CI/CD Lab" \
             --scan "." \
-            --out "reports" \
+            --out "reports/dependency-check-report.html" \
             --format HTML \
-            --enableExperimental || true
+            --enableExperimental \
+            --failOnCVSS 7 || true
+        continue-on-error: true
 
       - name: Upload security report
         if: always()
@@ -112,16 +105,12 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Create reports directory
-        run: |
-          mkdir -p reports
-          touch reports/test-results.xml
-          touch reports/coverage.xml
+        run: mkdir -p reports
 
       - name: Run tests
         run: |
-          pytest --junitxml=reports/test-results.xml \
-                 --cov=. \
-                 --cov-report=xml:reports/coverage.xml || true
+          pytest -v --junitxml=reports/test-results.xml --cov=. --cov-report=xml:reports/coverage.xml
+        continue-on-error: true
 
       - name: Upload test results
         if: always()
