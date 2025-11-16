@@ -38,7 +38,7 @@ jobs:
           path: pylint-report.txt
 
   # === БЕЗОПАСНОСТЬ (OWASP Dependency-Check) ===
-    security:
+  security:
     runs-on: ubuntu-latest
     needs: lint
     steps:
@@ -89,7 +89,7 @@ jobs:
           path: reports/dependency-check-report.html
 
   # === ТЕСТИРОВАНИЕ (pytest + матрица версий) ===
-    test:
+  test:
     runs-on: ubuntu-latest
     needs: lint
     strategy:
@@ -116,7 +116,7 @@ jobs:
       - name: Run tests
         run: |
           pytest --junitxml=reports/test-results.xml --cov=. --cov-report=xml:reports/coverage.xml || echo "Tests failed"
-        continue-on-error: true  # ← Чтобы не падал весь пайплайн
+        continue-on-error: true
 
       - name: Upload test results
         if: always()
@@ -127,7 +127,7 @@ jobs:
             reports/test-results.xml
             reports/coverage.xml
 
-  # === УВЕДОМЛЕНИЯ В SLACK ПРИ ОШИБКЕ ===
+  # === УВЕДОМЛЕНИЯ В SLACK ===
   notify-slack:
     runs-on: ubuntu-latest
     if: failure()
@@ -136,12 +136,12 @@ jobs:
       - name: Send Slack alert
         uses: slackapi/slack-github-action@v1.26.0
         with:
-          channel-id: 'C09U32LSSKS'  # ← Замените на ваш канал
+          channel-id: 'C09U32LSSKS'
           slack-message: |
-            🚨 *CI/CD Pipeline Failed!*  
+            *CI/CD Pipeline Failed!*  
             Repo: ${{ github.repository }}  
             Branch: ${{ github.ref_name }}  
-            Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
+            Commit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>  
             <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
