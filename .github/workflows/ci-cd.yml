@@ -28,7 +28,7 @@ jobs:
 
       - name: Run pylint
         run: |
-          pylint app.py test_app.py > pylint-report.txt || echo "Linting failed"
+          pylint app.py test_app.py > pylint-report.txt || echo "Lint failed"
 
       - name: Upload lint report
         if: always()
@@ -37,7 +37,7 @@ jobs:
           name: pylint-report
           path: pylint-report.txt
 
-  # === БЕЗОПАСНОСТЬ (OWASP Dependency-Check) ===
+  # === БЕЗОПАСНОСТЬ (Dependency-Check) ===
   security:
     runs-on: ubuntu-latest
     needs: lint
@@ -63,7 +63,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Create reports directory
-        run: mkdir -p reports
+        run: |
+          mkdir -p reports
+          touch reports/dependency-check-report.html
 
       - name: Download OWASP Dependency-Check
         run: |
@@ -76,10 +78,9 @@ jobs:
           ./dependency-check/bin/dependency-check.sh \
             --project "CI/CD Lab" \
             --scan "." \
-            --out "reports/dependency-check-report.html" \
+            --out "reports" \
             --format HTML \
-            --enableExperimental
-        continue-on-error: true
+            --enableExperimental || true
 
       - name: Upload security report
         if: always()
@@ -111,12 +112,16 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Create reports directory
-        run: mkdir -p reports
+        run: |
+          mkdir -p reports
+          touch reports/test-results.xml
+          touch reports/coverage.xml
 
       - name: Run tests
         run: |
-          pytest --junitxml=reports/test-results.xml --cov=. --cov-report=xml:reports/coverage.xml || echo "Tests failed"
-        continue-on-error: true
+          pytest --junitxml=reports/test-results.xml \
+                 --cov=. \
+                 --cov-report=xml:reports/coverage.xml || true
 
       - name: Upload test results
         if: always()
@@ -127,7 +132,7 @@ jobs:
             reports/test-results.xml
             reports/coverage.xml
 
-  # === УВЕДОМЛЕНИЯ В SLACK ===
+  # === УВЕДОМЛЕНИЯ В SLACK ПРИ ОШИБКЕ ===
   notify-slack:
     runs-on: ubuntu-latest
     if: failure()
